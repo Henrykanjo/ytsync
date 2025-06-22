@@ -17,7 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем исходный код
 COPY main.py .
-COPY config.yaml .
 
 # Создаем директории для данных
 RUN mkdir -p /app/downloads /app/logs
