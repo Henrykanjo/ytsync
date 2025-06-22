@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  ytsync:
+    build: .
+    container_name: youtube-sync
+    restart: unless-stopped
+    volumes:
+      # Монтируем папку для загрузок
+      - /opt/media/youtube:/app/downloads
+      # Монтируем конфигурацию (можно редактировать без пересборки)
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - TZ=Europe/Moscow
+      - PYTHONUNBUFFERED=1
