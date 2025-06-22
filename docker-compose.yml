@@ -2,7 +2,12 @@ version: "3.8"
 
 services:
   ytsync:
-    build: .
+    build:
+      context: .
+      args:
+        # Настройка пользователя для правильных прав доступа
+        USER_UID: ${USER_UID:-1000}  # Можно переопределить через .env файл
+        USER_GID: ${USER_GID:-1000}  # Или напрямую: USER_UID: 1001
     container_name: youtube-sync
     restart: unless-stopped
     volumes:
@@ -10,6 +15,8 @@ services:
       - /opt/media/youtube:/app/downloads
       # Монтируем конфигурацию (можно редактировать без пересборки)
       - ./config.yaml:/app/config.yaml:ro
+      # Монтируем базу данных
+      - ./db:/app/db
     environment:
       - TZ=Europe/Moscow
       - PYTHONUNBUFFERED=1

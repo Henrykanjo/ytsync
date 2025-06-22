@@ -17,7 +17,21 @@
 
 ## Быстрый старт
 
-### 1. Настройка конфигурации
+### 1. Настройка пользователя
+
+Создайте `.env` файл для настройки UID/GID:
+
+```bash
+# Узнайте ваши UID и GID
+id -u  # UID
+id -g  # GID
+
+# Создайте .env файл
+cp .env.example .env
+# Отредактируйте значения в .env файле
+```
+
+### 2. Настройка конфигурации
 
 Отредактируйте файл `config.yaml`:
 
@@ -26,26 +40,27 @@ youtube:
   channels:
     - url: "https://www.youtube.com/@вашканал1"
       period_days: 30  # Загружать за последние 30 дней
+      output_dir: "./downloads/КАНАЛ1"  # Индивидуальная папка
     - url: "https://www.youtube.com/@вашканал2"
       period_days: 14  # Загружать за последние 2 недели
-    - url: "https://www.youtube.com/@вашканал3"
-      # Если period_days не указан, используется default_period_days
+      output_dir: "./downloads/КАНАЛ2"
   
   playlists:
     - url: "https://www.youtube.com/playlist?list=PLваш_плейлист"
       period_days: 60  # Загружать за последние 2 месяца
+      output_dir: "./downloads/плейлисты/МОЙ_ПЛЕЙЛИСТ"
 
 download:
-  output_dir: "/app/downloads"
+  output_dir: "./downloads"  # Папка по умолчанию
   quality: "best[ext=mp4]/best"
-  default_period_days: 30  # Период по умолчанию, если не указан для ссылки
+  default_period_days: 30
 
 scheduler:
   sync_interval_hours: 6
   first_run_time: "08:00"
 ```
 
-### 2. Запуск с Docker Compose
+### 3. Запуск с Docker Compose
 
 ```bash
 # Сборка и запуск
@@ -156,8 +171,61 @@ ytsync/
 - Интернет соединение
 - ~1GB свободного места на диске для временных файлов
 
+## Настройка пользователя
+
+Для правильных прав доступа к файлам нужно настроить UID/GID пользователя в контейнере.
+
+### Способ 1: Через .env файл (рекомендуется)
+
+```bash
+# .env
+USER_UID=1001
+USER_GID=1001
+```
+
+### Способ 2: Через аргументы сборки
+
+```bash
+docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t ytsync .
+```
+
+### Способ 3: Через docker-compose напрямую
+
+```yaml
+# docker-compose.yml
+services:
+  ytsync:
+    build:
+      context: .
+      args:
+        USER_UID: 1001
+        USER_GID: 1001
+```
+
+### Проверка прав доступа
+
+```bash
+# Проверить владельца загруженных файлов
+ls -la downloads/
+
+# Должно показать вашего пользователя:
+# drwxr-xr-x 2 username usergroup 4096 Jun 22 10:30 downloads/
+```
+
+## Структура папок
+
+```
+downloads/
+├── КАНАЛ1/                    # Видео первого канала
+├── КАНАЛ2/                    # Видео второго канала
+└── плейлисты/
+    ├── МОЙ_ПЛЕЙЛИСТ/         # Видео конкретного плейлиста
+    └── ДРУГОЙ_ПЛЕЙЛИСТ/      # Видео другого плейлиста
+```
+
 ## Безопасность
 
 - Сервис работает от непривилегированного пользователя
+- Настраиваемые UID/GID для правильных прав доступа
 - Ограничения по ресурсам в Docker
 - Безопасная обработка имен файлов

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:man.archlinux.org)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
