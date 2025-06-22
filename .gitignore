@@ -50,7 +50,7 @@ config.yml
 *.yaml.local
 *.yml.local
 
-# Logs
+# Logs (если понадобятся в будущем)
 *.log
 logs/
 

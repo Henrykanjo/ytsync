@@ -29,7 +29,7 @@ class ConfigFileHandler(FileSystemEventHandler):
         super().__init__()
     
     def on_modified(self, event):
-        if not event.is_directory and event.src_path.endswith(self.config_filename):
+        if not event.is_directory and os.path.basename(event.src_path) == self.config_filename:
             self.service.logger.info(f"Обнаружено изменение конфигурации: {event.src_path}")
             # Небольшая задержка, чтобы файл успел полностью записаться
             time.sleep(0.5)
@@ -70,8 +70,7 @@ class YouTubeSyncService:
             level=level,
             format=format_str,
             handlers=[
-                logging.StreamHandler(sys.stdout),
-                logging.FileHandler('ytsync.log', encoding='utf-8')
+                logging.StreamHandler(sys.stdout)
             ]
         )
         self.logger = logging.getLogger('YouTubeSync')
@@ -108,6 +107,9 @@ class YouTubeSyncService:
     def setup_config_monitoring(self):
         """Настройка мониторинга файла конфигурации"""
         try:
+            # Отключаем отладочные логи watchdog
+            logging.getLogger('watchdog').setLevel(logging.WARNING)
+            
             config_dir = os.path.dirname(os.path.abspath(self.config_path))
             config_filename = os.path.basename(self.config_path)
             
