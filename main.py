@@ -16,24 +16,7 @@ from pathlib import Path
 import re
 import random
 import sqlite3
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-
-
-class ConfigFileHandler(FileSystemEventHandler):
-    """Обработчик изменений файла конфигурации"""
-    
-    def __init__(self, service, config_filename):
-        self.service = service
-        self.config_filename = config_filename
-        super().__init__()
-    
-    def on_modified(self, event):
-        if not event.is_directory and os.path.basename(event.src_path) == self.config_filename:
-            self.service.logger.info(f"Обнаружено изменение конфигурации: {event.src_path}")
-            # Небольшая задержка, чтобы файл успел полностью записаться
-            time.sleep(0.5)
-            self.service.reload_config()
+import psutil
 
 
 class YouTubeSyncService:
@@ -42,17 +25,18 @@ class YouTubeSyncService:
         self.config = None
         self.logger = None
         self.db_path = './db/ytsync.db'
-        self.config_observer = None
+        self.config_last_modified = None
         self.load_config()
         self.setup_logging()
         self.init_database()
-        self.setup_config_monitoring()
 
     def load_config(self):
         """Загрузка конфигурации из YAML файла"""
         try:
             with open(self.config_path, 'r', encoding='utf-8') as file:
                 self.config = yaml.safe_load(file)
+            # Запоминаем время изменения файла
+            self.config_last_modified = os.path.getmtime(self.config_path)
         except FileNotFoundError:
             print(f"Файл конфигурации {self.config_path} не найден")
             sys.exit(1)
@@ -104,31 +88,19 @@ class YouTubeSyncService:
             else:
                 print(f"Ошибка при перезагрузке конфигурации: {e}")
     
-    def setup_config_monitoring(self):
-        """Настройка мониторинга файла конфигурации"""
+    def check_config_changes(self):
+        """Проверяет изменения в файле конфигурации"""
         try:
-            # Отключаем отладочные логи watchdog
-            logging.getLogger('watchdog').setLevel(logging.WARNING)
-            
-            config_dir = os.path.dirname(os.path.abspath(self.config_path))
-            config_filename = os.path.basename(self.config_path)
-            
-            event_handler = ConfigFileHandler(self, config_filename)
-            self.config_observer = Observer()
-            self.config_observer.schedule(event_handler, config_dir, recursive=False)
-            self.config_observer.start()
-            
-            self.logger.info(f"Мониторинг конфигурации запущен для файла: {self.config_path}")
-            
+            current_modified = os.path.getmtime(self.config_path)
+            if current_modified != self.config_last_modified:
+                self.logger.info("Обнаружены изменения в файле конфигурации, перезагружаю...")
+                self.reload_config()
+                return True
+            return False
         except Exception as e:
-            self.logger.error(f"Ошибка при настройке мониторинга конфигурации: {e}")
+            self.logger.error(f"Ошибка при проверке конфигурации: {e}")
+            return False
     
-    def stop_config_monitoring(self):
-        """Остановка мониторинга конфигурации"""
-        if self.config_observer:
-            self.config_observer.stop()
-            self.config_observer.join()
-            self.logger.info("Мониторинг конфигурации остановлен")
 
     def init_database(self):
         """Инициализация базы данных"""
@@ -580,16 +552,26 @@ class YouTubeSyncService:
 
         # Основной цикл
         try:
+            cycle_count = 0
             while True:
+                cycle_count += 1
                 schedule.run_pending()
+                
+                # Проверяем конфигурацию и мониторим ЦПУ каждые 10 циклов (10 минут)
+                if cycle_count % 10 == 0:
+                    # Проверяем изменения конфигурации
+                    self.check_config_changes()
+                    
+                    # Мониторинг ЦПУ
+                    cpu_percent = psutil.cpu_percent(interval=1)
+                    memory_info = psutil.virtual_memory()
+                    self.logger.info(f"Мониторинг системы: ЦПУ: {cpu_percent}%, RAM: {memory_info.percent}%")
+                
                 time.sleep(60)  # Проверяем каждую минуту
         except KeyboardInterrupt:
             self.logger.info("Получен сигнал остановки. Завершение работы...")
         except Exception as e:
             self.logger.error(f"Критическая ошибка: {str(e)}")
-        finally:
-            # Останавливаем мониторинг конфигурации при завершении
-            self.stop_config_monitoring()
 
 
 def main():
