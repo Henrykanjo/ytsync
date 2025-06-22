@@ -16,7 +16,6 @@ from pathlib import Path
 import re
 import random
 import sqlite3
-import psutil
 
 
 class YouTubeSyncService:
@@ -557,15 +556,9 @@ class YouTubeSyncService:
                 cycle_count += 1
                 schedule.run_pending()
                 
-                # Проверяем конфигурацию и мониторим ЦПУ каждые 10 циклов (10 минут)
+                # Проверяем конфигурацию каждые 10 циклов (10 минут)
                 if cycle_count % 10 == 0:
-                    # Проверяем изменения конфигурации
                     self.check_config_changes()
-                    
-                    # Мониторинг ЦПУ
-                    cpu_percent = psutil.cpu_percent(interval=1)
-                    memory_info = psutil.virtual_memory()
-                    self.logger.info(f"Мониторинг системы: ЦПУ: {cpu_percent}%, RAM: {memory_info.percent}%")
                 
                 time.sleep(60)  # Проверяем каждую минуту
         except KeyboardInterrupt:

@@ -1,29 +1,19 @@
-# Этап сборки зависимостей
-FROM python:3.11-slim as builder
-
-# Устанавливаем инструменты для сборки
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Копируем requirements и устанавливаем зависимости
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Финальный образ
+# Используем официальный Python образ
 FROM python:3.11-slim
 
-# Устанавливаем только runtime зависимости
+# Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем установленные пакеты из builder
-COPY --from=builder /root/.local /root/.local
-
 # Создаем рабочую директорию
 WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY requirements.txt .
+
+# Устанавливаем Python зависимости
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем исходный код
 COPY main.py .
@@ -38,7 +28,6 @@ USER ytuser
 
 # Переменные окружения
 ENV PYTHONUNBUFFERED=1
-ENV PATH=/root/.local/bin:$PATH
 
 # Открываем порт (если понадобится в будущем для API)
 EXPOSE 8000
