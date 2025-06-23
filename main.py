@@ -194,25 +194,26 @@ class YouTubeSyncService:
         plex_naming = self.config.get('download', {}).get('plex_naming', False)
         
         if plex_naming:
-            # Plex-совместимый формат для дата-основанных шоу
-            # Формат: ChannelName – YYYY-MM-DD – VideoTitle.ext
-            # Создаем структуру папок: ChannelName/Season YYYY/files
+            # Plex-совместимый формат для date-based TV Shows
+            # Формат: ShowName (Year) - YYYY-MM-DD - EpisodeTitle.ext
+            # Структура: ShowName (Year)/Season YYYY/files
             if source_url:
-                # Извлекаем имя канала из URL или используем uploader
+                # Извлекаем имя канала из URL
                 channel_name = self.extract_channel_name(source_url)
+                # Добавляем год для Plex (используем текущий год как год "шоу")
                 template = os.path.join(
                     output_dir, 
-                    channel_name,
+                    f'{channel_name} (%(upload_date>%Y)s)',
                     'Season %(upload_date>%Y)s',
-                    f'{channel_name} – %(upload_date>%Y-%m-%d)s – %(title)s.%(ext)s'
+                    f'{channel_name} (%(upload_date>%Y)s) - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
                 )
             else:
                 # Fallback если нет информации о канале
                 template = os.path.join(
                     output_dir, 
-                    '%(uploader)s',
+                    '%(uploader)s (%(upload_date>%Y)s)',
                     'Season %(upload_date>%Y)s',
-                    '%(uploader)s – %(upload_date>%Y-%m-%d)s – %(title)s.%(ext)s'
+                    '%(uploader)s (%(upload_date>%Y)s) - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
                 )
         else:
             # Оригинальный формат: Название-ГГГГ-ММ-ДД.расширение
@@ -286,7 +287,7 @@ class YouTubeSyncService:
 
         return sources
 
-    def get_ydl_opts(self, period_days=None, output_dir=None):
+    def get_ydl_opts(self, period_days=None, output_dir=None, source_url=None):
         """Настройки для yt-dlp с фильтром по дате и обходом блокировок"""
         download_config = self.config['download']
 
@@ -512,7 +513,7 @@ class YouTubeSyncService:
                         return
 
                     # Загружаем только отфильтрованные видео
-                    download_opts = self.get_ydl_opts(period_days, output_dir)
+                    download_opts = self.get_ydl_opts(period_days, output_dir, url)
                     # Убираем match_filter так как мы уже отфильтровали
                     download_opts.pop('match_filter', None)
                     with yt_dlp.YoutubeDL(download_opts) as download_ydl:
@@ -540,7 +541,7 @@ class YouTubeSyncService:
                 else:
                     # Одиночное видео
                     self.logger.info("Загружаю одиночное видео")
-                    download_opts = self.get_ydl_opts(period_days, output_dir)
+                    download_opts = self.get_ydl_opts(period_days, output_dir, url)
                     with yt_dlp.YoutubeDL(download_opts) as download_ydl:
                         download_ydl.download([url])
 
