@@ -192,42 +192,15 @@ class YouTubeSyncService:
 
         # Plex TV Shows формат для date-based shows
         # Структура: ShowName (Year)/Season Year/ShowName - YYYY-MM-DD - EpisodeTitle.ext
-        if source_url:
-            channel_name = self.extract_channel_name(source_url)
-            template = os.path.join(
-                output_dir,
-                'Season %(upload_date>%Y)s',
-                f'{channel_name} - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
-            )
-        else:
-            # Fallback если нет информации о канале
-            template = os.path.join(
-                output_dir,
-                'Season %(upload_date>%Y)s',
-                '%(uploader)s - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
-            )
+        template = os.path.join(
+            output_dir,
+            'Season %(upload_date>%Y)s',
+            '%(uploader)s - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
+        )
 
         self.logger.debug(f"Шаблон именования: {template}")
         return template
 
-
-    def extract_channel_name(self, source_url):
-        """Извлечение имени канала из URL"""
-        # Простое извлечение имени канала из URL
-        if '@' in source_url:
-            # Новый формат: @channelname
-            parts = source_url.split('@')[-1].split('/')
-            return parts[0] if parts else 'Unknown'
-        elif '/c/' in source_url:
-            # Старый формат: /c/channelname
-            parts = source_url.split('/c/')[-1].split('/')
-            return parts[0] if parts else 'Unknown'
-        elif '/channel/' in source_url:
-            # ID формат: /channel/UCxxxxx
-            parts = source_url.split('/channel/')[-1].split('/')
-            return parts[0] if parts else 'Unknown'
-        else:
-            return 'Unknown'
 
     def get_source_data(self):
         """Получение списка всех источников с их настройками"""
