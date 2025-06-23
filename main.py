@@ -57,36 +57,36 @@ class YouTubeSyncService:
             ]
         )
         self.logger = logging.getLogger('YouTubeSync')
-    
+
     def reload_config(self):
         """Перезагрузка конфигурации"""
         try:
             old_config = self.config.copy() if self.config else {}
             self.load_config()
-            
+
             # Проверяем, изменились ли настройки логирования
             new_log_level = self.config.get('logging', {}).get('level', 'INFO')
             old_log_level = old_config.get('logging', {}).get('level', 'INFO')
-            
+
             if new_log_level != old_log_level:
                 self.setup_logging()
                 self.logger.info("Настройки логирования обновлены")
-            
+
             self.logger.info("Конфигурация успешно перезагружена")
-            
+
             # Обновляем путь к базе данных если он изменился
             new_db_path = './db/ytsync.db'  # или из конфига если добавите
             if hasattr(self, 'db_path') and self.db_path != new_db_path:
                 self.db_path = new_db_path
                 self.init_database()
                 self.logger.info("База данных переинициализирована")
-                
+
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Ошибка при перезагрузке конфигурации: {e}")
             else:
                 print(f"Ошибка при перезагрузке конфигурации: {e}")
-    
+
     def check_config_changes(self):
         """Проверяет изменения в файле конфигурации"""
         try:
@@ -99,7 +99,7 @@ class YouTubeSyncService:
         except Exception as e:
             self.logger.error(f"Ошибка при проверке конфигурации: {e}")
             return False
-    
+
 
     def init_database(self):
         """Инициализация базы данных"""
@@ -130,7 +130,7 @@ class YouTubeSyncService:
                 # Неудачные попытки (failed) будут повторяться
                 return status == 'downloaded' or status.startswith('skipped')
             return False
-    
+
     def get_video_status(self, video_id):
         """Получает статус видео из базы данных"""
         with sqlite3.connect(self.db_path) as conn:
@@ -150,7 +150,7 @@ class YouTubeSyncService:
             ''', (video_id, video_url, title, upload_date,
                   datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'downloaded', source_url))
             conn.commit()
-    
+
     def mark_video_failed(self, video_id, video_url, title, upload_date, source_url, error_msg):
         """Отмечает видео как неудачно загруженное"""
         with sqlite3.connect(self.db_path) as conn:
@@ -162,7 +162,7 @@ class YouTubeSyncService:
             ''', (video_id, video_url, title, upload_date,
                   datetime.now().strftime('%Y-%m-%d %H:%M:%S'), f'failed: {error_msg[:200]}', source_url))
             conn.commit()
-    
+
     def mark_video_skipped(self, video_id, video_url, title, upload_date, source_url, reason):
         """Отмечает видео как пропущенное (по дате, длительности и т.д.)"""
         with sqlite3.connect(self.db_path) as conn:
@@ -189,14 +189,13 @@ class YouTubeSyncService:
         """Создание шаблона для именования файлов по стандарту Plex TV Shows"""
         if output_dir is None:
             output_dir = self.config['download']['output_dir']
-        
+
         # Plex TV Shows формат для date-based shows
         # Структура: ShowName (Year)/Season Year/ShowName - YYYY-MM-DD - EpisodeTitle.ext
         if source_url:
             channel_name = self.extract_channel_name(source_url)
             template = os.path.join(
                 output_dir,
-                f'{channel_name} (%(upload_date>%Y)s)',
                 'Season %(upload_date>%Y)s',
                 f'{channel_name} - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
             )
@@ -204,15 +203,14 @@ class YouTubeSyncService:
             # Fallback если нет информации о канале
             template = os.path.join(
                 output_dir,
-                '%(uploader)s (%(upload_date>%Y)s)',
                 'Season %(upload_date>%Y)s',
                 '%(uploader)s - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
             )
-        
+
         self.logger.debug(f"Шаблон именования: {template}")
         return template
 
-    
+
     def extract_channel_name(self, source_url):
         """Извлечение имени канала из URL"""
         # Простое извлечение имени канала из URL
@@ -298,7 +296,7 @@ class YouTubeSyncService:
 
         # Получаем формат качества и обрабатываем дополнительные ограничения
         base_format = download_config.get('quality', 'bestvideo[height<=1080]+bestaudio/best[height<=720]/best')
-        
+
         opts = {
             'format': base_format,
             'outtmpl': self.get_output_template(output_dir, source_url),
@@ -345,10 +343,10 @@ class YouTubeSyncService:
             if '+' in base_format:
                 # Применяем ограничение к видео части
                 opts['format'] = base_format.replace(
-                    'bestvideo[height<=1080]', 
+                    'bestvideo[height<=1080]',
                     f'bestvideo[height<=1080][filesize<{max_file_size}M]'
                 ).replace(
-                    'bestvideo[height<=720]', 
+                    'bestvideo[height<=720]',
                     f'bestvideo[height<=720][filesize<{max_file_size}M]'
                 )
             else:
@@ -511,14 +509,14 @@ class YouTubeSyncService:
                     with yt_dlp.YoutubeDL(download_opts) as download_ydl:
                         for video_data in filtered_urls:
                             video_url, video_id, video_title, upload_date = video_data
-                            
+
                             # Проверяем, была ли предыдущая неудачная попытка
                             video_status = self.get_video_status(video_id)
                             if video_status and video_status[0].startswith('failed'):
                                 self.logger.info(f"Повторная попытка загрузки: {video_title} ({video_id}) - предыдущая ошибка: {video_status[1]}")
                             else:
                                 self.logger.info(f"Загружаем: {video_title} ({video_id})")
-                            
+
                             try:
                                 download_ydl.download([video_url])
                                 # Отмечаем видео как успешно загруженное только после успешной загрузки
@@ -615,11 +613,11 @@ class YouTubeSyncService:
             while True:
                 cycle_count += 1
                 schedule.run_pending()
-                
+
                 # Проверяем конфигурацию каждые 10 циклов (10 минут)
                 if cycle_count % 10 == 0:
                     self.check_config_changes()
-                
+
                 time.sleep(60)  # Проверяем каждую минуту
         except KeyboardInterrupt:
             self.logger.info("Получен сигнал остановки. Завершение работы...")

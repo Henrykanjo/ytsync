@@ -44,7 +44,7 @@ youtube:
     - url: "https://www.youtube.com/@вашканал2"
       period_days: 14  # Загружать за последние 2 недели
       output_dir: "./downloads/КАНАЛ2"
-  
+
   playlists:
     - url: "https://www.youtube.com/playlist?list=PLваш_плейлист"
       period_days: 60  # Загружать за последние 2 месяца
@@ -86,7 +86,6 @@ python main.py
 
 ## Формат конфигурации
 
-### Новый формат (с индивидуальными настройками):
 ```yaml
 youtube:
   channels:
@@ -95,15 +94,6 @@ youtube:
   playlists:
     - url: "https://www.youtube.com/playlist?list=список"
       period_days: 60
-```
-
-### Совместимость со старым форматом:
-```yaml
-youtube:
-  channels:
-    - "https://www.youtube.com/@канал"  # Будет использован default_period_days
-  playlists:
-    - "https://www.youtube.com/playlist?list=список"
 ```
 
 ## Структура проекта
@@ -115,8 +105,7 @@ ytsync/
 ├── requirements.txt     # Python зависимости
 ├── Dockerfile          # Образ Docker
 ├── docker-compose.yml  # Конфигурация Docker Compose
-├── downloads/          # Папка для загруженных видео
-└── logs/              # Папка для логов
+└── downloads/          # Папка для загруженных видео
 ```
 
 ## Настройки конфигурации
@@ -205,8 +194,6 @@ downloads/
 Это обеспечивает полную совместимость с Plex Media Server для автоматического распознавания метаданных.
 
 ## Мониторинг
-
-Сервис создает подробные логи в файле `ytsync.log` и выводит информацию в консоль.
 
 Уровни логирования:
 - `INFO` - общая информация о работе
