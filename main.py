@@ -185,13 +185,58 @@ class YouTubeSyncService:
             filename = filename[:200]
         return filename.strip()
 
-    def get_output_template(self, output_dir=None):
+    def get_output_template(self, output_dir=None, source_url=None):
         """Создание шаблона для именования файлов"""
         if output_dir is None:
             output_dir = self.config['download']['output_dir']
-        # Формат: Название-ГГГГ-ММ-ДД.расширение
-        template = os.path.join(output_dir, '%(title)s-%(upload_date>%Y-%m-%d)s.%(ext)s')
+        
+        # Проверяем настройку совместимости с Plex
+        plex_naming = self.config.get('download', {}).get('plex_naming', False)
+        
+        if plex_naming:
+            # Plex-совместимый формат для дата-основанных шоу
+            # Формат: ChannelName – YYYY-MM-DD – VideoTitle.ext
+            # Создаем структуру папок: ChannelName/Season YYYY/files
+            if source_url:
+                # Извлекаем имя канала из URL или используем uploader
+                channel_name = self.extract_channel_name(source_url)
+                template = os.path.join(
+                    output_dir, 
+                    channel_name,
+                    'Season %(upload_date>%Y)s',
+                    f'{channel_name} – %(upload_date>%Y-%m-%d)s – %(title)s.%(ext)s'
+                )
+            else:
+                # Fallback если нет информации о канале
+                template = os.path.join(
+                    output_dir, 
+                    '%(uploader)s',
+                    'Season %(upload_date>%Y)s',
+                    '%(uploader)s – %(upload_date>%Y-%m-%d)s – %(title)s.%(ext)s'
+                )
+        else:
+            # Оригинальный формат: Название-ГГГГ-ММ-ДД.расширение
+            template = os.path.join(output_dir, '%(title)s-%(upload_date>%Y-%m-%d)s.%(ext)s')
+        
         return template
+    
+    def extract_channel_name(self, source_url):
+        """Извлечение имени канала из URL"""
+        # Простое извлечение имени канала из URL
+        if '@' in source_url:
+            # Новый формат: @channelname
+            parts = source_url.split('@')[-1].split('/')
+            return parts[0] if parts else 'Unknown'
+        elif '/c/' in source_url:
+            # Старый формат: /c/channelname
+            parts = source_url.split('/c/')[-1].split('/')
+            return parts[0] if parts else 'Unknown'
+        elif '/channel/' in source_url:
+            # ID формат: /channel/UCxxxxx
+            parts = source_url.split('/channel/')[-1].split('/')
+            return parts[0] if parts else 'Unknown'
+        else:
+            return 'Unknown'
 
     def get_source_data(self):
         """Получение списка всех источников с их настройками"""
@@ -258,9 +303,12 @@ class YouTubeSyncService:
             # По умолчанию
             max_videos = 50
 
+        # Получаем формат качества и обрабатываем дополнительные ограничения
+        base_format = download_config.get('quality', 'bestvideo[height<=1080]+bestaudio/best[height<=720]/best')
+        
         opts = {
-            'format': download_config.get('quality', 'best[ext=mp4]/best'),
-            'outtmpl': self.get_output_template(output_dir),
+            'format': base_format,
+            'outtmpl': self.get_output_template(output_dir, source_url),
             'writeinfojson': False,
             'writesubtitles': False,
             'writeautomaticsub': False,
@@ -269,11 +317,19 @@ class YouTubeSyncService:
             'extract_flat': False,
             # Ограничиваем количество обрабатываемых видео
             'playlist_end': max_videos,
-            # Для совместимости с Plex предпочитаем mp4
-            'postprocessors': [{
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4',
-            }],
+            # Для высокого качества нужен merge
+            'merge_output_format': 'mp4',
+            # Постпроцессоры для обеспечения совместимости с Plex
+            'postprocessors': [
+                {
+                    'key': 'FFmpegVideoConvertor',
+                    'preferedformat': 'mp4',
+                },
+                {
+                    'key': 'FFmpegMetadata',
+                    'add_metadata': True,
+                }
+            ],
             # Настройки для обхода блокировок YouTube
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -289,10 +345,21 @@ class YouTubeSyncService:
 
         self.logger.info(f"Ограничиваем обработку максимум {max_videos} последними видео")
 
-        # Ограничения по размеру
+        # Ограничения по размеру - применяем к базовому формату
         max_file_size = download_config.get('max_file_size', 0)
         if max_file_size > 0:
-            opts['format'] += f'[filesize<{max_file_size}M]'
+            # Для сложных форматов с + нужно добавлять ограничение к каждой части
+            if '+' in base_format:
+                # Применяем ограничение к видео части
+                opts['format'] = base_format.replace(
+                    'bestvideo[height<=1080]', 
+                    f'bestvideo[height<=1080][filesize<{max_file_size}M]'
+                ).replace(
+                    'bestvideo[height<=720]', 
+                    f'bestvideo[height<=720][filesize<{max_file_size}M]'
+                )
+            else:
+                opts['format'] += f'[filesize<{max_file_size}M]'
 
         # Создаем комбинированный фильтр
         filters = []
