@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:man.archlinux.org)",
       "WebFetch(domain:stackoverflow.com)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

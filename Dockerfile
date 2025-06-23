@@ -24,11 +24,13 @@ COPY main.py .
 
 # Создаем директории для данных
 RUN mkdir -p /app/downloads
+RUN mkdir -p /home/ytuser
 
 # Создаем пользователя для безопасности с указанными UID/GID
 RUN groupadd -g ${USER_GID} ytuser && \
     useradd -r -u ${USER_UID} -g ${USER_GID} ytuser
 RUN chown -R ytuser:ytuser /app
+RUN chown -R ytuser:ytuser /home/ytuser
 USER ytuser
 
 # Переменные окружения
