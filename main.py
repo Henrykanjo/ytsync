@@ -195,31 +195,50 @@ class YouTubeSyncService:
         
         if plex_naming:
             # Plex-совместимый формат для date-based TV Shows
-            # Формат: ShowName (Year) - YYYY-MM-DD - EpisodeTitle.ext
-            # Структура: ShowName (Year)/Season YYYY/files
+            # Формат: ShowName - YYYY-MM-DD - EpisodeTitle.ext
+            # Структура каталогов создается отдельно в create_directory_structure
             if source_url:
                 # Извлекаем имя канала из URL
                 channel_name = self.extract_channel_name(source_url)
-                # Добавляем год для Plex (используем текущий год как год "шоу")
-                template = os.path.join(
-                    output_dir, 
-                    f'{channel_name} (%(upload_date>%Y)s)',
-                    'Season %(upload_date>%Y)s',
-                    f'{channel_name} (%(upload_date>%Y)s) - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
-                )
+                # Только имя файла - каталог будет создан отдельно
+                template = f'{channel_name} - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
             else:
                 # Fallback если нет информации о канале
-                template = os.path.join(
-                    output_dir, 
-                    '%(uploader)s (%(upload_date>%Y)s)',
-                    'Season %(upload_date>%Y)s',
-                    '%(uploader)s (%(upload_date>%Y)s) - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
-                )
+                template = '%(uploader)s - %(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s'
         else:
             # Оригинальный формат: Название-ГГГГ-ММ-ДД.расширение
             template = os.path.join(output_dir, '%(title)s-%(upload_date>%Y-%m-%d)s.%(ext)s')
         
+        self.logger.debug(f"Шаблон именования: {template}")
         return template
+
+    def create_directory_structure(self, source_url, upload_date, output_dir):
+        """Создание структуры каталогов для Plex совместимого именования"""
+        plex_naming = self.config.get('download', {}).get('plex_naming', False)
+        
+        if not plex_naming:
+            return output_dir
+            
+        try:
+            if source_url:
+                channel_name = self.extract_channel_name(source_url)
+                year = upload_date[:4] if upload_date and len(upload_date) >= 4 else datetime.now().strftime('%Y')
+                
+                # Создаем структуру: output_dir/ChannelName (Year)/Season Year/
+                show_dir = os.path.join(output_dir, f'{channel_name} ({year})')
+                season_dir = os.path.join(show_dir, f'Season {year}')
+                
+                # Создаем каталоги
+                Path(season_dir).mkdir(parents=True, exist_ok=True)
+                self.logger.debug(f"Создан каталог: {season_dir}")
+                
+                return season_dir
+            else:
+                return output_dir
+                
+        except Exception as e:
+            self.logger.warning(f"Ошибка при создании структуры каталогов: {e}")
+            return output_dir
     
     def extract_channel_name(self, source_url):
         """Извлечение имени канала из URL"""
@@ -287,7 +306,7 @@ class YouTubeSyncService:
 
         return sources
 
-    def get_ydl_opts(self, period_days=None, output_dir=None, source_url=None):
+    def get_ydl_opts(self, period_days=None, output_dir=None, source_url=None, target_dir=None):
         """Настройки для yt-dlp с фильтром по дате и обходом блокировок"""
         download_config = self.config['download']
 
@@ -307,9 +326,14 @@ class YouTubeSyncService:
         # Получаем формат качества и обрабатываем дополнительные ограничения
         base_format = download_config.get('quality', 'bestvideo[height<=1080]+bestaudio/best[height<=720]/best')
         
+        # Определяем путь для сохранения
+        save_dir = target_dir if target_dir else output_dir
+        template = self.get_output_template(output_dir, source_url)
+        full_template = os.path.join(save_dir, template) if not os.path.isabs(template) else template
+        
         opts = {
             'format': base_format,
-            'outtmpl': self.get_output_template(output_dir, source_url),
+            'outtmpl': full_template,
             'writeinfojson': False,
             'writesubtitles': False,
             'writeautomaticsub': False,
@@ -528,7 +552,18 @@ class YouTubeSyncService:
                                 self.logger.info(f"Загружаем: {video_title} ({video_id})")
                             
                             try:
-                                download_ydl.download([video_url])
+                                # Создаем структуру каталогов для Plex
+                                target_dir = self.create_directory_structure(url, upload_date, output_dir)
+                                
+                                # Обновляем опции загрузки с правильным каталогом
+                                if target_dir != output_dir:
+                                    video_opts = self.get_ydl_opts(period_days, output_dir, url, target_dir)
+                                    video_opts.pop('match_filter', None)
+                                    with yt_dlp.YoutubeDL(video_opts) as video_ydl:
+                                        video_ydl.download([video_url])
+                                else:
+                                    download_ydl.download([video_url])
+                                    
                                 # Отмечаем видео как успешно загруженное только после успешной загрузки
                                 self.mark_video_processed(video_id, video_url, video_title, upload_date, url)
                                 self.logger.info(f"✓ Видео {video_id} успешно загружено и отмечено как обработанное")
