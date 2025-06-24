@@ -2,21 +2,26 @@ version: "3.8"
 
 services:
   ytsync:
+    # Use pre-built image from GitHub Container Registry (uncomment when using CI/CD)
+    # image: ghcr.io/DmitriyLyalyuev/ytsync:latest
+
+    # Or build locally (comment out when using pre-built image)
     build:
       context: .
       args:
-        # Настройка пользователя для правильных прав доступа
-        USER_UID: ${USER_UID:-1000}  # Можно переопределить через .env файл
-        USER_GID: ${USER_GID:-1000}  # Или напрямую: USER_UID: 1001
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+
     container_name: youtube-sync
     restart: unless-stopped
+
     volumes:
-      # Монтируем папку для загрузок
-      - /opt/media/youtube:/app/downloads
-      # Монтируем конфигурацию (можно редактировать без пересборки)
       - ./config.yaml:/app/config.yaml:ro
-      # Монтируем базу данных
       - ./db:/app/db
+      - ./downloads:/app/downloads
+
     environment:
       - TZ=Europe/Moscow
       - PYTHONUNBUFFERED=1
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
