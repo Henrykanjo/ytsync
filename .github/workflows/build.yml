@@ -110,8 +110,9 @@ jobs:
           # Install Trivy
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-          # Scan the built image
-          trivy image --format json --output trivy-report.json ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
+          # Scan the built image using primary tag from metadata
+          PRIMARY_TAG=$(echo '${{ steps.meta.outputs.tags }}' | head -n1)
+          trivy image --format json --output trivy-report.json $PRIMARY_TAG || true
 
       - name: Upload vulnerability scan results
         uses: actions/upload-artifact@v4
