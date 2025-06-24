@@ -39,7 +39,7 @@ jobs:
         run: |
           black --check main.py
           isort --check-only main.py
-          pylint main.py --disable=C0114,C0116,R0903,R0913,R0914
+          pylint main.py
 
       - name: Security scan with Bandit
         run: |

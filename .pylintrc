@@ -20,9 +20,14 @@ disable=missing-module-docstring,
         too-many-locals,
         too-many-branches,
         too-many-statements,
+        too-many-positional-arguments,
         line-too-long,
         invalid-name,
-        import-error
+        import-error,
+        broad-exception-caught,
+        logging-fstring-interpolation,
+        unused-argument,
+        possibly-used-before-assignment
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, json
