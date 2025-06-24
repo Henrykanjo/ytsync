@@ -14,27 +14,6 @@ Ensure your repository has the following permissions enabled:
 - **Contents**: Read (for accessing repository content)
 - **Metadata**: Read (for repository metadata)
 
-### Optional Secrets for Deployment
-
-For automatic deployment, you may need these optional secrets:
-
-```
-Name: DEPLOY_SSH_KEY
-Value: [Private SSH key for deployment server access]
-```
-
-### GitHub Variables (Optional)
-
-For deployment configuration:
-
-```
-Name: DEPLOY_HOST
-Value: your-deployment-server.com
-
-Name: DEPLOY_USER  
-Value: your-deployment-username
-```
-
 ## GitHub Setup
 
 ### 1. Enable GitHub Packages
