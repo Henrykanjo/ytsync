@@ -1,5 +1,7 @@
 # YouTube Sync Service
 
+![Logo](assets/ytsync.jpg)
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
@@ -345,60 +347,60 @@ Detailed setup instructions are available in [.github/SETUP.md](.github/SETUP.md
 
 ### ❓ General Questions
 
-**Q: Does the service support platforms other than YouTube?**  
+**Q: Does the service support platforms other than YouTube?**
 A: Currently only YouTube is supported. Support for other platforms may be added in future versions.
 
-**Q: Can it download private videos?**  
+**Q: Can it download private videos?**
 A: No, the service only works with publicly available videos. Private videos and restricted content are not accessible.
 
-**Q: How often does synchronization occur?**  
+**Q: How often does synchronization occur?**
 A: Every 6 hours by default. The interval is configurable via `sync_interval_hours` parameter.
 
 ### ⚙️ Setup and Configuration
 
-**Q: How to change video quality?**  
+**Q: How to change video quality?**
 A: Configure the `quality` parameter in the `download` section. See "Video Quality Settings" section for examples.
 
-**Q: Can I limit file size of downloads?**  
+**Q: Can I limit file size of downloads?**
 A: Yes, use `max_file_size` and `max_duration` parameters in the `download` section.
 
-**Q: How to set individual folders for channels?**  
+**Q: How to set individual folders for channels?**
 A: Add `output_dir` parameter for each channel or playlist in the configuration.
 
 ### 🐳 Docker and Deployment
 
-**Q: Why are files created with wrong permissions?**  
+**Q: Why are files created with wrong permissions?**
 A: Configure UID/GID in `.env` file according to your user (see "User Configuration" section).
 
-**Q: Can I run multiple instances of the service?**  
+**Q: Can I run multiple instances of the service?**
 A: Yes, but ensure they use different download folders and databases.
 
-**Q: How to update to a new version?**  
+**Q: How to update to a new version?**
 A: Stop container, run `docker-compose pull`, then `docker-compose up -d`.
 
 ### 🔧 Troubleshooting
 
-**Q: "HTTP Error 429" or "Too Many Requests" error**  
+**Q: "HTTP Error 429" or "Too Many Requests" error**
 A: YouTube limits request rate. Increase sync interval or add delays.
 
-**Q: Videos download but don't appear in Plex**  
+**Q: Videos download but don't appear in Plex**
 A: Check folder structure - service automatically creates Plex-compatible structure "Season YYYY/Uploader - YYYY-MM-DD - Title.ext".
 
-**Q: Service doesn't download new videos**  
+**Q: Service doesn't download new videos**
 A: Check logs for errors, ensure channels are active, verify `period_days` settings.
 
-**Q: High resource consumption**  
+**Q: High resource consumption**
 A: Limit `max_videos_per_source`, increase `sync_interval_hours`, use Docker resource limits.
 
 ### 📊 Performance
 
-**Q: How much space does the database take?**  
+**Q: How much space does the database take?**
 A: SQLite database takes minimal space - usually a few MB even for thousands of videos.
 
-**Q: How to speed up downloads?**  
+**Q: How to speed up downloads?**
 A: Configure download quality, use file size filters, limit videos per source.
 
-**Q: How to clear downloaded videos from database?**  
+**Q: How to clear downloaded videos from database?**
 A: Delete `db/ytsync.db` file for complete reset or use SQL queries for selective cleanup.
 
 ### 🆘 Get Help
