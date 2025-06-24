@@ -5,7 +5,9 @@
       "WebFetch(domain:stackoverflow.com)",
       "Bash(git add:*)",
       "WebFetch(domain:github.com)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
