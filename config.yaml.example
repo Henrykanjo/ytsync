@@ -1,0 +1,34 @@
+youtube:
+  channels:
+    - url: "https://www.youtube.com/c/@GEOSHOW"
+      output_dir: "./downloads/GEO"
+    - url: "https://www.youtube.com/@MRGEO2"
+      output_dir: "./downloads/GEO2"
+    - url: "https://www.youtube.com/c/@LOONYMAN"
+      output_dir: "./downloads/Loony"
+
+  playlists:
+    - url: "https://www.youtube.com/playlist?list=PLosWRcTJZf2pfUh1GbbLk_oRwmomxeS9K"
+      output_dir: "./downloads/History"
+    - url: "https://www.youtube.com/playlist?list=PLosWRcTJZf2o6D6ZMu-ZJuUZrDAr-A2g4"
+      output_dir: "./downloads/Billions"
+download:
+  output_dir: "./downloads"
+
+  quality: "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080][ext=mp4]/best[height<=720]/best"
+
+  max_file_size: 0
+
+  max_duration: 0
+
+  default_period_days: 30
+
+  max_videos_per_source: 0
+
+scheduler:
+  sync_interval_hours: 6
+  first_run_time: "08:00"
+
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -19,6 +19,33 @@ Automated service for synchronizing videos from YouTube channels and playlists.
 - ✅ Scheduler for automatic synchronization
 - ✅ Full operation logging
 
+## Use Cases
+
+### 🏠 Home Media Server
+- **Automatic synchronization** of favorite YouTube channels for offline viewing
+- **Integration with Plex/Jellyfin** for organizing video collections
+- **Traffic savings** - download during unlimited internet hours
+
+### 📚 Educational Content
+- **Save courses and lectures** from educational channels
+- **Create local library** for offline learning
+- **Archive** important content that might be deleted
+
+### 🎬 Content Creators
+- **Monitor competitors** - automatic download of new videos
+- **Create collections** of videos by topic for trend analysis
+- **Backup own content** from backup channels
+
+### 🏢 Corporate Use
+- **Archive** corporate YouTube channels
+- **Compliance** requirements for content preservation
+- **Content analytics** for marketing research
+
+### 🌐 Geographic Restrictions
+- **Bypass blocks** - download via VPN for later viewing
+- **Save** region-blocked content
+- **Access content** in areas with poor internet
+
 ## Quick Start
 
 ### 1. User Setup
@@ -131,7 +158,7 @@ ytsync/
 - `max_duration` - maximum duration in seconds (0 = no limit)
 - `default_period_days` - default download period if not specified for specific source (30 days)
 - `max_videos_per_source` - maximum number of videos to process per source (0 = auto: period_days * 3, minimum 10)
-- `plex_naming` - use Plex Media Server compatible naming format (true/false)
+- Automatic Plex-compatible file naming
 
 ## Video Quality Settings
 
@@ -183,7 +210,7 @@ Examples:
 - `Programming Tutorial-2024-06-21.mp4`
 
 ### Plex-Compatible Format
-When `plex_naming: true` is enabled, files are organized in structure:
+Files are automatically organized in Plex-compatible structure:
 
 ```
 downloads/
@@ -223,7 +250,7 @@ The service is configured for maximum compatibility with Plex Media Server:
 - FFmpeg usage for conversion
 - Compatible video/audio codecs
 - Efficient filtering through built-in yt-dlp parameters
-- **Plex-compatible file naming** (enabled with `plex_naming: true` parameter)
+- **Plex-compatible file naming**
   - Folder structure: `ChannelName/Season YYYY/`
   - File format: `ChannelName – YYYY-MM-DD – VideoTitle.ext`
   - Automatic video grouping by years as "seasons"
@@ -313,6 +340,144 @@ docker run -d \
 
 ### CI/CD Setup:
 Detailed setup instructions are available in [.github/SETUP.md](.github/SETUP.md)
+
+## FAQ / Frequently Asked Questions
+
+### ❓ General Questions
+
+**Q: Does the service support platforms other than YouTube?**  
+A: Currently only YouTube is supported. Support for other platforms may be added in future versions.
+
+**Q: Can it download private videos?**  
+A: No, the service only works with publicly available videos. Private videos and restricted content are not accessible.
+
+**Q: How often does synchronization occur?**  
+A: Every 6 hours by default. The interval is configurable via `sync_interval_hours` parameter.
+
+### ⚙️ Setup and Configuration
+
+**Q: How to change video quality?**  
+A: Configure the `quality` parameter in the `download` section. See "Video Quality Settings" section for examples.
+
+**Q: Can I limit file size of downloads?**  
+A: Yes, use `max_file_size` and `max_duration` parameters in the `download` section.
+
+**Q: How to set individual folders for channels?**  
+A: Add `output_dir` parameter for each channel or playlist in the configuration.
+
+### 🐳 Docker and Deployment
+
+**Q: Why are files created with wrong permissions?**  
+A: Configure UID/GID in `.env` file according to your user (see "User Configuration" section).
+
+**Q: Can I run multiple instances of the service?**  
+A: Yes, but ensure they use different download folders and databases.
+
+**Q: How to update to a new version?**  
+A: Stop container, run `docker-compose pull`, then `docker-compose up -d`.
+
+### 🔧 Troubleshooting
+
+**Q: "HTTP Error 429" or "Too Many Requests" error**  
+A: YouTube limits request rate. Increase sync interval or add delays.
+
+**Q: Videos download but don't appear in Plex**  
+A: Check folder structure - service automatically creates Plex-compatible structure "Season YYYY/Uploader - YYYY-MM-DD - Title.ext".
+
+**Q: Service doesn't download new videos**  
+A: Check logs for errors, ensure channels are active, verify `period_days` settings.
+
+**Q: High resource consumption**  
+A: Limit `max_videos_per_source`, increase `sync_interval_hours`, use Docker resource limits.
+
+### 📊 Performance
+
+**Q: How much space does the database take?**  
+A: SQLite database takes minimal space - usually a few MB even for thousands of videos.
+
+**Q: How to speed up downloads?**  
+A: Configure download quality, use file size filters, limit videos per source.
+
+**Q: How to clear downloaded videos from database?**  
+A: Delete `db/ytsync.db` file for complete reset or use SQL queries for selective cleanup.
+
+### 🆘 Get Help
+
+**Didn't find answer to your question?**
+- Create issue using [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
+- Suggest improvement via [feature request](.github/ISSUE_TEMPLATE/feature_request.md)
+- Check [contributing guide](CONTRIBUTING.md)
+
+## Troubleshooting
+
+### 🔍 Problem Diagnosis
+
+**1. Check logs**
+```bash
+# Docker
+docker-compose logs -f ytsync
+
+# Without Docker
+python main.py  # Logs output to console
+```
+
+**2. Check configuration**
+```bash
+# YAML validation
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
+```
+
+**3. Check YouTube availability**
+```bash
+# Test simple download
+yt-dlp --no-download "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+```
+
+### ⚠️ Common Issues
+
+| Symptom | Possible Cause | Solution |
+|---------|---------------|----------|
+| 403/429 errors | YouTube blocking | Increase delays, use VPN |
+| Empty files | FFmpeg issues | Check FFmpeg installation |
+| Wrong permissions | Incorrect UID/GID | Configure `.env` file |
+| No Plex folders | Access permission issues | Check download folder permissions |
+| Video duplication | Database issues | Check `db/` folder permissions |
+| High load | Too many sources | Limit sources or frequency |
+
+### 🔄 Recovery Procedures
+
+**Reset database:**
+```bash
+rm -f db/ytsync.db
+# Database will be recreated on next run
+```
+
+**Clear Docker cache:**
+```bash
+docker system prune -f
+docker-compose build --no-cache
+```
+
+**Restore configuration:**
+```bash
+cp config.yaml config.yaml.backup
+# Restore from backup or create new one
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+**Quick Start for Contributors:**
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Run quality checks: `black --check main.py && pylint main.py`
+5. Submit a pull request
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a complete list of changes, new features, and version history.
 
 ## Security
 
